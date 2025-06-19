@@ -24,4 +24,11 @@ interface AmazfitApiService {
 object ApiConstants {
     const val TOKENS_BASE_URL = "https://api-user.huami.com/"
     const val LOGIN_BASE_URL = "https://account.huami.com/"
+    
+    // Redirect URI used in OAuth flow - this is what Huami expects
+    const val REDIRECT_URI = "https://s3-us-west-2.amazonws.com/hm-registration/successsignin.html"
+    
+    // Alternative redirect URIs for different regions (if needed in future)
+    const val REDIRECT_URI_EU = "https://s3-eu-west-1.amazonws.com/hm-registration/successsignin.html"
+    const val REDIRECT_URI_ASIA = "https://s3-ap-southeast-1.amazonws.com/hm-registration/successsignin.html"
 }

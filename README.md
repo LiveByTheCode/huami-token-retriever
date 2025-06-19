@@ -35,6 +35,11 @@ The app communicates with the following Huami/Amazfit API endpoints:
 - `https://api-user.huami.com/registrations/{email}/tokens` - Token retrieval
 - `https://account.huami.com/v2/client/login` - User authentication
 
+## Known Limitations
+
+- **Region Support**: Currently hardcoded for US region (`us-west-2`). Users in other regions may need modifications.
+- **Redirect URI**: Uses the same redirect URI as the original huami-token script. This appears to be a standard Huami OAuth endpoint.
+
 ## Security Notes
 
 ⚠️ **Important**: This app handles sensitive authentication credentials. The token retrieved is unique to your account and should be kept secure.

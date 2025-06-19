@@ -85,10 +85,10 @@ class AuthRepository {
                 "state" to "REDIRECTION",
                 "client_id" to "HuaMi",
                 "password" to password,
-                "redirect_uri" to "https://s3-us-west-2.amazonws.com/hm-registration/successsignin.html",
-                "region" to "us-west-2",
+                "redirect_uri" to ApiConstants.REDIRECT_URI,
+                "region" to "us-west-2", // TODO: Make this configurable based on user region
                 "token" to "access",
-                "country_code" to "US"
+                "country_code" to "US" // TODO: Make this configurable based on user region
             )
             
             val response = tokensApi.getTokens(email, tokenRequest)
