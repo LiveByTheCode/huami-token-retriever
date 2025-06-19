@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'  # Triggers on version tags like v1.0.0, v1.1.0, etc.
+  release:
+    types: [published, created]  # Triggers when release is created via GitHub UI
   workflow_dispatch:  # Allows manual triggering
 
 jobs:
@@ -54,29 +56,47 @@ jobs:
         name: release-apk
         path: ${{ steps.sign_app.outputs.signedReleaseFile }}
         
-    - name: Create Release
+    - name: Get release info
+      id: release_info
+      run: |
+        if [[ "${{ github.event_name }}" == "release" ]]; then
+          echo "tag_name=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          echo "release_id=${{ github.event.release.id }}" >> $GITHUB_OUTPUT
+        else
+          echo "tag_name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "release_id=" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Create or Update Release
       uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/')
       with:
+        tag_name: ${{ steps.release_info.outputs.tag_name }}
         files: ${{ steps.sign_app.outputs.signedReleaseFile }}
-        name: Release ${{ github.ref_name }}
+        name: Release ${{ steps.release_info.outputs.tag_name }}
         body: |
-          ## Huami Token Retriever ${{ github.ref_name }}
+          ## Huami Token Retriever ${{ steps.release_info.outputs.tag_name }}
           
-          ### Changes
-          - See commit history for details
+          ### 📱 Download
+          Download the APK file below to install on your Android device.
           
-          ### Installation
-          1. Download the APK file below
+          ### 🚀 Installation
+          1. Download `app-release-signed.apk` 
           2. Enable "Install from unknown sources" on your Android device
           3. Install the APK
           
-          ### Usage
+          ### 📋 Usage
           - Enter your Amazfit account credentials
           - Tap "Get Token" to retrieve your authentication token
           - Copy the token for use with Gadgetbridge or other apps
           
-          **⚠️ Disclaimer: Use at your own risk. See README for full disclaimers.**
+          ### ⚠️ Important
+          - **Use at your own risk** - See README for full disclaimers
+          - **Not affiliated with Amazfit/Huami**
+          - **For educational/personal use only**
+          
+          ### 🔗 Links
+          - [Source Code](https://github.com/${{ github.repository }})
+          - [Issues & Support](https://github.com/${{ github.repository }}/issues)
         draft: false
         prerelease: false
       env:
