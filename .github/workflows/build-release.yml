@@ -4,9 +4,12 @@ on:
   push:
     tags:
       - 'v*'  # Triggers on version tags like v1.0.0, v1.1.0, etc.
-  release:
-    types: [published, created]  # Triggers when release is created via GitHub UI
   workflow_dispatch:  # Allows manual triggering
+
+permissions:
+  contents: write
+  actions: read
+  packages: read
 
 jobs:
   build:
@@ -56,48 +59,34 @@ jobs:
         name: release-apk
         path: ${{ steps.sign_app.outputs.signedReleaseFile }}
         
-    - name: Get release info
-      id: release_info
+    - name: Rename APK with version
       run: |
-        if [[ "${{ github.event_name }}" == "release" ]]; then
-          echo "tag_name=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
-          echo "release_id=${{ github.event.release.id }}" >> $GITHUB_OUTPUT
-        else
-          echo "tag_name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-          echo "release_id=" >> $GITHUB_OUTPUT
-        fi
+        cp "${{ steps.sign_app.outputs.signedReleaseFile }}" "HuamiTokenRetriever-${{ github.ref_name }}.apk"
         
-    - name: Create or Update Release
+    - name: Create Release
       uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
       with:
-        tag_name: ${{ steps.release_info.outputs.tag_name }}
-        files: ${{ steps.sign_app.outputs.signedReleaseFile }}
-        name: Release ${{ steps.release_info.outputs.tag_name }}
+        files: "HuamiTokenRetriever-${{ github.ref_name }}.apk"
+        name: "Huami Token Retriever ${{ github.ref_name }}"
         body: |
-          ## Huami Token Retriever ${{ steps.release_info.outputs.tag_name }}
+          ## 📱 Huami Token Retriever ${{ github.ref_name }}
           
-          ### 📱 Download
-          Download the APK file below to install on your Android device.
+          Android app to retrieve authentication tokens from Huami/Amazfit servers.
           
-          ### 🚀 Installation
-          1. Download `app-release-signed.apk` 
-          2. Enable "Install from unknown sources" on your Android device
+          ### Download & Install
+          1. Download `HuamiTokenRetriever-${{ github.ref_name }}.apk` below
+          2. Enable "Install from unknown sources" on Android
           3. Install the APK
           
-          ### 📋 Usage
-          - Enter your Amazfit account credentials
-          - Tap "Get Token" to retrieve your authentication token
-          - Copy the token for use with Gadgetbridge or other apps
+          ### Usage
+          - Enter Amazfit account credentials  
+          - Tap "Get Token" to retrieve auth token
+          - Copy token for use with Gadgetbridge
           
-          ### ⚠️ Important
-          - **Use at your own risk** - See README for full disclaimers
-          - **Not affiliated with Amazfit/Huami**
-          - **For educational/personal use only**
-          
-          ### 🔗 Links
-          - [Source Code](https://github.com/${{ github.repository }})
-          - [Issues & Support](https://github.com/${{ github.repository }}/issues)
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ### ⚠️ Disclaimers
+          - Use at your own risk
+          - Not affiliated with Amazfit/Huami
+          - For educational/personal use only
+        generate_release_notes: true
+        make_latest: true
