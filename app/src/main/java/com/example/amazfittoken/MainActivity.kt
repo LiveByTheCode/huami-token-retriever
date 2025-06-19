@@ -1,14 +1,14 @@
 package com.example.amazfittoken
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.amazfittoken.adapter.DevicesAdapter
 import com.example.amazfittoken.databinding.ActivityMainBinding
+import com.example.amazfittoken.model.AuthResult
 import com.example.amazfittoken.repository.AuthRepository
 import kotlinx.coroutines.launch
 
@@ -35,10 +35,6 @@ class MainActivity : AppCompatActivity() {
             if (validateInput(email, password)) {
                 authenticateUser(email, password)
             }
-        }
-        
-        binding.copyButton.setOnClickListener {
-            copyTokenToClipboard()
         }
     }
     
@@ -67,18 +63,29 @@ class MainActivity : AppCompatActivity() {
     private fun authenticateUser(email: String, password: String) {
         showLoading(true)
         hideError()
-        hideTokenCard()
+        hideDevices()
         
         lifecycleScope.launch {
             try {
-                val result = authRepository.authenticateUser(email, password)
+                // Step 1: Authenticate user
+                val authResult = authRepository.authenticateUser(email, password)
                 
-                if (result.isSuccess) {
-                    val token = result.getOrNull()!!
-                    showToken(token)
-                    Toast.makeText(this@MainActivity, "Token retrieved successfully!", Toast.LENGTH_SHORT).show()
+                if (authResult.isSuccess) {
+                    val auth = authResult.getOrNull()!!
+                    
+                    // Step 2: Fetch devices
+                    val devicesResult = authRepository.getDevices(auth)
+                    
+                    if (devicesResult.isSuccess) {
+                        val devices = devicesResult.getOrNull()!!
+                        showDevices(devices)
+                        Toast.makeText(this@MainActivity, "Devices retrieved successfully!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        val error = devicesResult.exceptionOrNull()?.message ?: "Failed to get devices"
+                        showError(error)
+                    }
                 } else {
-                    val error = result.exceptionOrNull()?.message ?: "Unknown error occurred"
+                    val error = authResult.exceptionOrNull()?.message ?: "Authentication failed"
                     showError(error)
                 }
             } catch (e: Exception) {
@@ -89,13 +96,23 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    private fun showToken(token: String) {
-        binding.tokenTextView.text = token
-        binding.tokenCardView.visibility = View.VISIBLE
+    private fun showDevices(devices: List<com.example.amazfittoken.model.Device>) {
+        if (devices.isEmpty()) {
+            showError("No devices found for your account")
+            return
+        }
+        
+        binding.devicesHeaderText.visibility = View.VISIBLE
+        binding.devicesRecyclerView.visibility = View.VISIBLE
+        
+        val adapter = DevicesAdapter(devices, this)
+        binding.devicesRecyclerView.adapter = adapter
+        binding.devicesRecyclerView.layoutManager = LinearLayoutManager(this)
     }
     
-    private fun hideTokenCard() {
-        binding.tokenCardView.visibility = View.GONE
+    private fun hideDevices() {
+        binding.devicesHeaderText.visibility = View.GONE
+        binding.devicesRecyclerView.visibility = View.GONE
     }
     
     private fun showError(message: String) {
@@ -110,16 +127,6 @@ class MainActivity : AppCompatActivity() {
     private fun showLoading(show: Boolean) {
         binding.progressBar.visibility = if (show) View.VISIBLE else View.GONE
         binding.loginButton.isEnabled = !show
-        binding.loginButton.text = if (show) "Retrieving Token..." else "Get Token"
-    }
-    
-    private fun copyTokenToClipboard() {
-        val token = binding.tokenTextView.text.toString()
-        if (token.isNotEmpty()) {
-            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val clip = ClipData.newPlainText("Amazfit Token", token)
-            clipboard.setPrimaryClip(clip)
-            Toast.makeText(this, "Token copied to clipboard!", Toast.LENGTH_SHORT).show()
-        }
+        binding.loginButton.text = if (show) "Retrieving Devices..." else "Get Token"
     }
 }
